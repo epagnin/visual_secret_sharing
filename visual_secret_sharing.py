@@ -35,9 +35,10 @@ def image_to_bits(image):
 	Matrix = np.array(image)
 # 	print(Matrix)
 	Bin_Matrix = np.zeros((image.size[1], image.size[0]), dtype=np.uint8)
+	avg = round(Matrix.sum() / (image.size[1] * image.size[0]))
 	x,y = 0,0
 	while y < image.size[0]:
-		if Matrix[x][y] != 0:
+		if Matrix[x][y] <= avg:
 			Bin_Matrix[x][y]=1
 		x = (x+1) % image.size[1]
 		if x == 0:
@@ -108,7 +109,7 @@ def make_shares(matrix):
 		share1[x+1][y+1]=A[1][1]
 		share2[x+1][y+1]=B[1][1]
 		share1[x][y+1]=A[0][1]
-		share2[x][y+1]=B[1][0]
+		share2[x][y+1]=B[0][1]
 		i = (i+1) % matrix.shape[0]
 		if i == 0:
 			j = (j+1) 
@@ -119,27 +120,32 @@ def make_shares(matrix):
 	
 def overlay(share1,share2):
 	share = np.zeros((share1.shape[0], share1.shape[1]), dtype=np.uint8)
-	x,y = 0,0
-	while y < share1.shape[1]:
-		if (share1[x][y]== 1 or share2[x][y] == 1):
-			share[x][y] = 1
-		x = (x+1) % share1.shape[0]
-		if x == 0:
-			y = (y+1) 
+	# x,y = 0,0
+	assert share1.shape[0] == share2.shape[0]
+	assert share1.shape[1] == share2.shape[1]
+
+	for y in range(0, share1.shape[0]):
+		for x in range(0, share1.shape[1]):
+			if (share1[y][x] == 1  or share2[y][x] == 1):
+				share[y][x] = 1
 	return share
 	
 
 
 def make_image_from_matrix(matrix):
 	tmp = np.zeros((matrix.shape[0], matrix.shape[1]), dtype=np.uint8)
-	x,y = 0,0
-	while y < matrix.shape[1]:
-		if matrix[x][y]!= 0:
-			tmp[x][y] = 255
-		x = (x+1) % matrix.shape[0]
-		if x == 0:
-			y = (y+1)
-	return Image.fromarray(tmp)
+	for y in range(0, matrix.shape[0]):
+		for x in range(0, matrix.shape[1]):
+			# if (matrix[y][x] != 0):
+			tmp[y][x] = (1 - matrix[y][x]) * 255
+	# x,y = 0,0
+	# while y < matrix.shape[1]:
+	# 	if matrix[x][y]!= 0:
+	# 		tmp[x][y] = 255
+	# 	x = (x+1) % matrix.shape[0]
+	# 	if x == 0:
+	# 		y = (y+1)
+	return Image.fromarray(tmp, mode="L")
 	
 def myparser():
     parser = argparse.ArgumentParser(
@@ -169,6 +175,7 @@ if __name__ == '__main__':
 # 	print(Matrix)
 	dimensions = Matrix.shape
 	make_image_from_matrix(Matrix).save("Input1.png")
+	path = print(fname[1])
 
 	if fname2:
 		BnWimage2 = image_to_BnW(fname2)
@@ -188,8 +195,11 @@ if __name__ == '__main__':
 		Reconstruct = overlay(Reconstruct,Share1)
 		make_image_from_matrix(Reconstruct).save("Overlay1+2+3.png")
 	else:
-		(Share1,Share2) = make_shares(Matrix)
-		make_image_from_matrix(Share1).save(f'{path}')
+		# output_filename = f'{fname}{init_page}-{end_page-1}.pdf'
+		Share1, Share2 = make_shares(Matrix)
+		# Reconstruct = overlay(Share1,Share2)
+		# make_image_from_matrix(Share1).save(f'{path}')
+		make_image_from_matrix(Share1).save("Share_1.png")
 		make_image_from_matrix(Share2).save("Share_2.png")
 		Reconstruct = overlay(Share1,Share2)
 		make_image_from_matrix(Reconstruct).save("Overlay_1+2.png")
